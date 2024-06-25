@@ -1,0 +1,284 @@
+
+
+library(Rcpp)
+
+cppFunction( " 
+List sirout_groups(double beta_H1, double beta_B, double beta_H3, 
+	double h_H1, double h_B, double h_H3, 
+	double d_H1, double d_B, double d_H3, 
+	double nu, double rho, 
+	double sigma12, double sigma13, double sigma23, 
+	double N0, double tf, 
+	int days_import) { 
+	
+	
+	double eta11 = 1.0;
+		
+	int grp = 0;
+	int imptype = 0; 
+	int numsubs = 3; 
+
+	 // initial conditions, susceptibles 
+	double t = 0;
+	double S_E = 1e+06 * 0.74794; 
+	double I1_E = 1e+06 * 1e-05; 
+	double I2_E = 1e+06 * 1e-05; 
+	double I3_E = 1e+06 * 1e-05; 
+	double II1_E = 1e+06 * 1e-05; 
+	double II2_E = 1e+06 * 1e-05; 
+	double II3_E = 1e+06 * 1e-05; 
+	double H1_E = 1e+06 * 0.00; 
+	double H2_E = 1e+06 * 0.00; 
+	double H3_E = 1e+06 * 0.00; 
+	double R1_E = 1e+06 * 0.042; 
+	double R2_E = 1e+06 * 0.042; 
+	double R3_E = 1e+06 * 0.042; 
+	double RR1_E = 1e+06 * 0.042; 
+	double RR2_E = 1e+06 * 0.042; 
+	double RR3_E = 1e+06 * 0.042; 
+
+	double D = 0.0; 
+	double N = 1e+06; 
+
+	double J1_E = 0.00; 
+	double J2_E = 0.00; 
+	double J3_E = 0.00; 
+
+
+	std::vector<double> ta;
+	std::vector<double> S_Ea;
+	std::vector<double> I1_Ea;
+	std::vector<double> I2_Ea;
+	std::vector<double> I3_Ea;
+	std::vector<double> J1_Ea;
+	std::vector<double> J2_Ea;
+	std::vector<double> J3_Ea;
+	std::vector<double> II1_Ea;
+	std::vector<double> II2_Ea;
+	std::vector<double> II3_Ea;
+	std::vector<double> H1_Ea;
+	std::vector<double> H2_Ea;
+	std::vector<double> H3_Ea;
+	std::vector<double> R1_Ea;
+	std::vector<double> R2_Ea;
+	std::vector<double> R3_Ea;
+	std::vector<double> RR1_Ea;
+	std::vector<double> RR2_Ea;
+	std::vector<double> RR3_Ea;
+	std::vector<double> Da;
+	std::vector<double> Na;
+
+
+	do { 
+
+		 //int it = int(t); 
+
+		ta.push_back(t);
+		S_Ea.push_back(S_E);
+		I1_Ea.push_back(I1_E);
+		I2_Ea.push_back(I2_E);
+		I3_Ea.push_back(I3_E);
+		J1_Ea.push_back(J1_E);
+		J2_Ea.push_back(J2_E);
+		J3_Ea.push_back(J3_E);
+		II1_Ea.push_back(II1_E);
+		II2_Ea.push_back(II2_E);
+		II3_Ea.push_back(II3_E);
+		H1_Ea.push_back(H1_E);
+		H2_Ea.push_back(H2_E);
+		H3_Ea.push_back(H3_E);
+		R1_Ea.push_back(R1_E);
+		R2_Ea.push_back(R2_E);
+		R3_Ea.push_back(R3_E);
+		RR1_Ea.push_back(RR1_E);
+		RR2_Ea.push_back(RR2_E);
+		RR3_Ea.push_back(RR3_E);
+		Da.push_back(D);
+		Na.push_back(N);
+		
+		// ---------------------------
+		// Sporadic case introductions
+		// ---------------------------
+		
+		int ttt = int(t); 	
+				
+		if (ttt%days_import == 0) {
+			
+			int impgroup = grp % 1 + 1; 
+			grp += 1;
+			imptype += 1;
+			int stype = imptype%numsubs; 
+
+			if (impgroup == 1) { 
+				S_E -= 1; 
+				if (stype == 0) { 
+					I1_E+= 1; 
+				} else if (stype == 1) { 
+					I2_E+= 1; 
+				} else if (stype == 2) { 
+					I3_E+= 1; 
+				} 
+			}
+			
+		}
+	
+		
+		
+		// ----------------------
+		// Differential equations
+		// ----------------------
+		
+
+		 //dS 
+		double dS_E = - eta11*beta_H1*(I1_E+II1_E)*S_E/N - eta11*beta_B*(I2_E+II2_E)*S_E/N - eta11*beta_H3*(I3_E+II3_E)*S_E/N 
+			+ rho*(RR1_E+RR2_E+RR3_E); 
+
+		 //dI 
+		double dI1_E = eta11*beta_H1*(I1_E+II1_E)*S_E/N
+			- h_H1*nu*I1_E - (1-h_H1)*nu*I1_E
+			+ eta11*beta_H1*(I1_E+II1_E)*(sigma12*R2_E+sigma13*R3_E)/N 
+			+ eta11*beta_H1*(I1_E+II1_E)*(sigma12*RR2_E+sigma13*RR3_E)/N; 
+		double dI2_E = eta11*beta_B*(I2_E+II2_E)*S_E/N
+			- h_B*nu*I2_E - (1-h_B)*nu*I2_E
+			+ eta11*beta_B*(I2_E+II2_E)*(sigma12*R1_E+sigma23*R3_E)/N 
+			+ eta11*beta_B*(I2_E+II2_E)*(sigma12*RR1_E+sigma23*RR3_E)/N; 
+		double dI3_E = eta11*beta_H3*(I3_E+II3_E)*S_E/N
+			- h_H3*nu*I3_E - (1-h_H3)*nu*I3_E
+			+ eta11*beta_H3*(I3_E+II3_E)*(sigma13*R1_E+sigma23*R2_E)/N 
+			+ eta11*beta_H3*(I3_E+II3_E)*(sigma13*RR1_E+sigma23*RR2_E)/N; 
+
+		 //dJ 
+		double dJ1_E = eta11*beta_H1*(I1_E+II1_E)*S_E/N + eta11*beta_H1*(I1_E+II1_E)*(sigma12*R2_E+sigma13*R3_E)/N 
+			 + eta11*beta_H1*(I1_E+II1_E)*(sigma12*RR2_E+sigma13*RR3_E)/N; 
+		double dJ2_E = eta11*beta_B*(I2_E+II2_E)*S_E/N+ eta11*beta_B*(I2_E+II2_E)*(sigma12*R1_E+sigma23*R3_E)/N 
+			+ eta11*beta_B*(I2_E+II2_E)*(sigma12*RR1_E+sigma23*RR3_E)/N; 
+		double dJ3_E = eta11*beta_H3*(I3_E+II3_E)*S_E/N+ eta11*beta_H3*(I3_E+II3_E)*(sigma13*R1_E+sigma23*R2_E)/N 
+			+ eta11*beta_H3*(I3_E+II3_E)*(sigma13*RR1_E+sigma23*RR2_E)/N; 
+
+		 //dII 
+		double dII1_E = 
+			(1-h_H1)*nu*I1_E - nu*II1_E; 
+		double dII2_E = 
+			(1-h_B)*nu*I2_E - nu*II2_E; 
+		double dII3_E = 
+			(1-h_H3)*nu*I3_E - nu*II3_E; 
+
+		 //dH 
+		double dH1_E = h_H1*nu*I1_E - d_H1*nu*H1_E - (1-d_H1)*nu*H1_E; 
+		double dH2_E = h_B*nu*I2_E - d_B*nu*H2_E - (1-d_B)*nu*H2_E; 
+		double dH3_E = h_H3*nu*I3_E - d_H3*nu*H3_E - (1-d_H3)*nu*H3_E; 
+
+		 //d R  
+		double dR1_E = nu*II1_E + (1-d_H1)*nu*H1_E
+			- eta11*sigma12*beta_B*(I2_E+II2_E)*R1_E/N - eta11*sigma13*beta_H3*(I3_E+II3_E)*R1_E/N
+			- rho*R1_E; 
+		double dR2_E = nu*II2_E + (1-d_B)*nu*H2_E
+			- eta11*sigma12*beta_H1*(I1_E+II1_E)*R2_E/N - eta11*sigma23*beta_H3*(I3_E+II3_E)*R2_E/N
+			- rho*R2_E; 
+		double dR3_E = nu*II3_E + (1-d_H3)*nu*H3_E
+			- eta11*sigma13*beta_H1*(I1_E+II1_E)*R3_E/N - eta11*sigma23*beta_B*(I2_E+II2_E)*R3_E/N
+			- rho*R3_E; 
+
+		 //d RR  
+		double dRR1_E = rho*R1_E
+			- eta11*sigma12*beta_B*(I2_E+II2_E)*RR1_E/N - eta11*sigma13*beta_H3*(I3_E+II3_E)*RR1_E/N
+			- rho*RR1_E; 
+		double dRR2_E = rho*R2_E
+			- eta11*sigma12*beta_H1*(I1_E+II1_E)*RR2_E/N - eta11*sigma23*beta_H3*(I3_E+II3_E)*RR2_E/N
+			- rho*RR2_E; 
+		double dRR3_E = rho*R3_E
+			- eta11*sigma13*beta_H1*(I1_E+II1_E)*RR3_E/N - eta11*sigma23*beta_B*(I2_E+II2_E)*RR3_E/N
+			- rho*RR3_E; 
+		//dD
+		double dD = d_H1*nu*H1_E + d_B*nu*H2_E + d_H3*nu*H3_E; 
+
+		
+		// -----------------
+		// Birth/death/aging
+		// -----------------
+	
+		dS_E +=  - 0.03835616*S_E/1000;
+		dI1_E +=  - 0.03835616*I1_E/1000;
+		dI2_E +=  - 0.03835616*I2_E/1000;
+		dI3_E +=  - 0.03835616*I3_E/1000;
+		dII1_E +=  - 0.03835616*II1_E/1000;
+		dII2_E +=  - 0.03835616*II2_E/1000;
+		dII3_E +=  - 0.03835616*II3_E/1000;
+		dH1_E +=  - 0.03835616*H1_E/1000;
+		dH2_E +=  - 0.03835616*H2_E/1000;
+		dH3_E +=  - 0.03835616*H3_E/1000;
+		dR1_E +=  - 0.03835616*R1_E/1000;
+		dR2_E +=  - 0.03835616*R2_E/1000;
+		dR3_E +=  - 0.03835616*R3_E/1000;
+		dRR1_E +=  - 0.03835616*RR1_E/1000;
+		dRR2_E +=  - 0.03835616*RR2_E/1000;
+		dRR3_E +=  - 0.03835616*RR3_E/1000;
+
+		dS_E += 14 * N / 1000 / 365;
+
+
+
+		//Apply derivatives
+		S_E += dS_E; 
+		I1_E += dI1_E; 
+		I2_E += dI2_E; 
+		I3_E += dI3_E; 
+		J1_E += dJ1_E; 
+		J2_E += dJ2_E; 
+		J3_E += dJ3_E; 
+		II1_E += dII1_E; 
+		II2_E += dII2_E; 
+		II3_E += dII3_E; 
+		H1_E += dH1_E; 
+		H2_E += dH2_E; 
+		H3_E += dH3_E; 
+		R1_E += dR1_E; 
+		R2_E += dR2_E; 
+		R3_E += dR3_E; 
+		RR1_E += dRR1_E; 
+		RR2_E += dRR2_E; 
+		RR3_E += dRR3_E; 
+		D += dD; 
+
+		N =  
+			S_E +  
+			I1_E + I2_E + I3_E +  
+			II1_E + II2_E + II3_E +  
+			H1_E + H2_E + H3_E +  
+			R1_E + R2_E + R3_E + RR1_E + RR2_E + RR3_E +  
+			D; 
+
+		t++; 
+	} while (t < tf); 
+
+
+	List output(0);
+	output.push_back(ta); 
+	output.push_back(S_Ea); 
+	output.push_back(I1_Ea); 
+	output.push_back(I2_Ea); 
+	output.push_back(I3_Ea); 
+	output.push_back(J1_Ea); 
+	output.push_back(J2_Ea); 
+	output.push_back(J3_Ea); 
+	output.push_back(II1_Ea); 
+	output.push_back(II2_Ea); 
+	output.push_back(II3_Ea); 
+	output.push_back(H1_Ea); 
+	output.push_back(H2_Ea); 
+	output.push_back(H3_Ea); 
+	output.push_back(R1_Ea); 
+	output.push_back(R2_Ea); 
+	output.push_back(R3_Ea); 
+	output.push_back(RR1_Ea); 
+	output.push_back(RR2_Ea); 
+	output.push_back(RR3_Ea); 
+	output.push_back(Da); 
+	output.push_back(Na); 
+
+	return(output); 
+
+} 
+" 
+)
+
